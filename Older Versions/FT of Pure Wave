@@ -1,0 +1,62 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns #seaborn is to format and make graph look nicer
+sns.set()
+
+
+plt.figure()
+frequency = 3.0
+time = np.arange(0,2,0.001) #equaly space time from 0 to 2 seconds, with gap of 0.001 seconds 
+cos_wave = np.cos(2*np.pi*frequency*time) #cosine wave with given frequency and time
+
+plt.rcParams['figure.figsize'] = (12,4) #customise (size) of graphb
+plt.plot(time, cos_wave)
+plt.title("Cosine Wave with 3 Hz frequency")
+plt.ylabel("Amplitude")
+plt.xlabel('Time (in seconds)')
+
+plt.figure()
+#rotating through various frequencies to identify frequency of OG wave
+centre = []
+minFreq, maxFreq = 0.0, 10.0
+sampleFreqList = np.arange(minFreq, maxFreq, 0.2) #list of frequencies from 0 to 10 with gap of 0.2)
+for sample in sampleFreqList:
+    centre.append([(cos_wave[i], time[i]*sample*2*np.pi) for i in range(len(time))]) #radius/amplitude (distance from origin) and angle (of rotation) pair
+
+#plotting the points in cartesian plane (amplitude, angle) to (x,y)
+xCord, yCord = [], []
+for _ in range(len(centre)):
+    xCord.append([amp*np.cos(theta) for (amp,theta) in centre[_]]) 
+    yCord.append([amp*np.sin(theta) for (amp,theta) in centre[_]])
+#plotting all the different frequencies
+meanList = []
+plt.rcParams['figure.figsize'] = (15,110)
+for _ in range(len(centre)):
+    plt.subplot(int(len(centre)/10)+1,10,_+1)
+    plt.plot(xCord[_], yCord[_], linewidth = 0.4)
+    plt.plot(np.mean(xCord[_]), np.mean(yCord[_]), 'ro', markersize = 3) #plotting mean of x and y coordinates as red dot
+    plt.title("SF = "+str(round(sampleFreqList[_], 2))+" Hz")
+    plt.axis('equal')
+
+    #store centre for later
+    xMean = np.sum(xCord[_])
+    meanList.append(xMean) #only care about real component
+plt.subplots_adjust(
+    left=0.02,    # left margin
+    right=0.98,   # right margin
+    top=0.97,     # top margin
+    bottom=0.02,  # bottom margin
+    wspace=0.35,  # horizontal gap between plots
+    hspace=0.55   # vertical gap between plots (needs more room for titles)
+)
+
+plt.figure()
+#plot centre against frequency
+plt.rcParams['figure.figsize'] = (12,4)
+plt.xlabel("Frequency (Hz)")
+plt.xticks(np.arange(minFreq, maxFreq, 0.5))
+sns.set()
+plt.plot(sampleFreqList, meanList)
+plt.subplots_adjust(sns.reset_defaults())
+
+plt.show()
