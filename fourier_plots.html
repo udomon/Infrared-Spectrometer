@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fourier Winding Plots</title>
+  <style>
+    body { margin: 0; background: #111; font-family: monospace; }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 8px;
+      padding: 12px;
+    }
+    .cell { display: flex; flex-direction: column; align-items: center; }
+    .cell span {
+      color: #aaa; font-size: 10px; margin-bottom: 3px;
+    }
+    canvas { background: #1a1a2e; border-radius: 4px; width: 100%; aspect-ratio: 1; }
+  </style>
+</head>
+<body>
+  <div id="grid"></div>
+
+  <!-- load the file your Python writes (it writes "const PLOTS = ...;" into plots.json) -->
+  <script src="plots.json"></script>
+
+  <script>
+    // defensive: if PLOTS is missing, show console hint
+    if (typeof PLOTS === 'undefined') {
+      console.error('PLOTS is not defined. Run the Python exporter to create "plots.json" (it must contain "const PLOTS = ...;").');
+    } else {
+      const grid = document.getElementById('grid');
+
+      PLOTS.forEach(p => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+
+        const label = document.createElement('span');
+        label.textContent = `${p.freq} Hz`;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 160;
+        canvas.height = 160;
+        const ctx = canvas.getContext('2d');
+
+        const S = 160;
+        const pad = 12;
+        const scale = (S / 2) - pad;
+
+        // map data coords to canvas pixels
+        const toX = v => S/2 + v * scale;
+        const toY = v => S/2 - v * scale;
+
+        // if the plot is marked special, visually highlight it (yellow outline + glow)
+        if (p.special) {
+          // visual outline via canvas style so it shows outside the drawing area
+          canvas.style.border = '3px solid #ffeb3b'; // yellow
+          canvas.style.boxShadow = '0 0 8px rgba(255,235,59,0.8)';
+          // also use a brighter line color for the trace by default
+          p._strokeColor = p.color || '#ffd54f';
+        } else {
+          p._strokeColor = p.color || '#4a9eff';
+        }
+
+        // draw plot line (guard empty arrays)
+        if ((p.x && p.x.length) && (p.y && p.y.length)) {
+          ctx.strokeStyle = p._strokeColor;
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(toX(p.x[0]), toY(p.y[0]));
+          for (let i = 1; i < p.x.length && i < p.y.length; i++) {
+            ctx.lineTo(toX(p.x[i]), toY(p.y[i]));
+          }
+          ctx.stroke();
+        }
+
+        // draw centre of mass dot — use the keys produced by your Python: centreX / centreY
+        const cx = (p.centreX !== undefined) ? p.centreX : p.cx;
+        const cy = (p.centreY !== undefined) ? p.centreY : p.cy;
+        if (cx !== undefined && cy !== undefined) {
+          ctx.beginPath();
+          ctx.arc(toX(cx), toY(cy), 4, 0, 2*Math.PI);
+          ctx.fillStyle = '#ff4444';
+          ctx.fill();
+        }
+
+        cell.appendChild(label);
+        cell.appendChild(canvas);
+        grid.appendChild(cell);
+      });
+    }
+  </script>
+</body>
+</html>
